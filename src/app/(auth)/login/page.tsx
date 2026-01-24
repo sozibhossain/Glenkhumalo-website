@@ -204,7 +204,7 @@ function LoginForm() {
           <div className="text-center text-sm text-slate-500 pt-4">
             Don&apos;t have an account?{" "}
             <Link
-              href="/register"
+              href="/role-selection"
               className="text-[#1e293b] font-bold hover:underline ml-1"
             >
               Create one for free

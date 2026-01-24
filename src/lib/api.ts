@@ -5,9 +5,6 @@ const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 
 const api = axios.create({
   baseURL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 api.interceptors.request.use(async (config) => {
@@ -54,6 +51,8 @@ export interface AuthResponseData {
 export interface UserProfile {
   _id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   role: string;
   locationGeo?: { type: string; coordinates: number[] };
@@ -61,6 +60,7 @@ export interface UserProfile {
   phone?: string;
   address?: string;
   isEmailVerified?: boolean;
+  bio?: string;
   // Add other fields as needed
 }
 
@@ -94,6 +94,12 @@ export interface WebsiteContent {
   _id: string;
 }
 
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 // --- API Functions ---
 
 export const authApi = {
@@ -120,9 +126,19 @@ export const dataApi = {
     const response = await api.get<ApiResponse<UserProfile>>('/users');
     return response.data.data;
   },
-  updateProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
-    const response = await api.put<ApiResponse<UserProfile>>('/users/update-profile', data);
+  updateProfile: async (data: Partial<UserProfile> | FormData): Promise<UserProfile> => {
+    const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
+    const response = await api.put<ApiResponse<UserProfile>>(
+      '/users/update-profile',
+      data,
+      isFormData
+        ? { headers: { 'Content-Type': 'multipart/form-data' } }
+        : undefined
+    );
     return response.data.data;
+  },
+  changePassword: async (data: ChangePasswordPayload) => {
+    return api.put<ApiResponse<null>>('/users/change-password', data);
   },
 };
 

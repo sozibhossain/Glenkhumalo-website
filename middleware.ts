@@ -7,7 +7,12 @@ export default withAuth(
         // e.g. checking roles
         const token = req.nextauth.token;
         const isAuth = !!token;
-        const isAuthPage = req.nextUrl.pathname.startsWith('/login') || req.nextUrl.pathname.startsWith('/register');
+        const isAuthPage =
+            req.nextUrl.pathname.startsWith('/login') ||
+            req.nextUrl.pathname.startsWith('/register') ||
+            req.nextUrl.pathname.startsWith('/role-selection') ||
+            req.nextUrl.pathname.startsWith('/forgot-password') ||
+            req.nextUrl.pathname.startsWith('/reset-password');
 
         if (isAuthPage) {
             if (isAuth) {
@@ -22,7 +27,19 @@ export default withAuth(
     },
     {
         callbacks: {
-            authorized: ({ token }) => !!token,
+            authorized: ({ req, token }) => {
+                const pathname = req.nextUrl.pathname;
+                if (
+                    pathname.startsWith('/login') ||
+                    pathname.startsWith('/register') ||
+                    pathname.startsWith('/role-selection') ||
+                    pathname.startsWith('/forgot-password') ||
+                    pathname.startsWith('/reset-password')
+                ) {
+                    return true;
+                }
+                return !!token;
+            },
         },
         pages: {
             signIn: '/login',
@@ -33,6 +50,11 @@ export default withAuth(
 export const config = {
     matcher: [
         "/profile/:path*",
+        "/login",
+        "/register",
+        "/role-selection",
+        "/forgot-password",
+        "/reset-password",
         // Add other protected routes here
     ],
 };

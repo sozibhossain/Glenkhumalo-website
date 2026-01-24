@@ -5,6 +5,14 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const links = [
   { href: "/", label: "Home" },
@@ -18,6 +26,9 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeHash, setActiveHash] = useState<string>("#about"); // default (can be "#about" or "")
+  const { data: session, status } = useSession();
+  const user = session?.user as any;
+  const avatarUrl = user?.profileImage?.url || user?.image;
 
   // Handle scroll effect
   useEffect(() => {
@@ -92,6 +103,11 @@ export default function Navbar() {
     if (href.startsWith("#")) setActiveHash(href);
   };
 
+  const handleLogout = async () => {
+    setOpen(false);
+    await signOut({ callbackUrl: "/" });
+  };
+
   return (
     <nav
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
@@ -147,19 +163,64 @@ export default function Navbar() {
 
         {/* Desktop buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link href="/login">
-            <Button
-              variant="ghost"
-              className="text-[#00143F] font-bold bg-[#F1F5F9] hover:bg-[#E2E8F0] rounded-full px-8 h-12 transition-all"
-            >
-              Sign In
-            </Button>
-          </Link>
-          <Link href="/register">
-            <Button className="bg-gradient-to-b from-[#0047AB] to-[#00143F] hover:shadow-blue-900/20 hover:shadow-xl text-white font-bold rounded-full px-8 h-12 shadow-lg transition-all active:scale-95">
-              Sign Up
-            </Button>
-          </Link>
+          {status === "authenticated" ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:shadow-md">
+                  <div className="h-10 w-10 rounded-full bg-[#F1F5F9] overflow-hidden flex items-center justify-center">
+                    {avatarUrl ? (
+                      <Image
+                        src={avatarUrl}
+                        alt={user?.name || "Profile avatar"}
+                        width={40}
+                        height={40}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm font-semibold text-[#00143F]">
+                        {user?.name?.slice(0, 1)?.toUpperCase() || "U"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="hidden lg:flex flex-col text-left">
+                    <span className="text-sm font-semibold text-[#00143F] leading-none">
+                      {user?.name || "Profile"}
+                    </span>
+                    <span className="text-xs text-slate-500 capitalize leading-none">
+                      {user?.role || "User"}
+                    </span>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="w-full">
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleLogout}>
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button
+                  variant="ghost"
+                  className="text-[#00143F] font-bold bg-[#F1F5F9] hover:bg-[#E2E8F0] rounded-full px-8 h-12 transition-all"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/role-selection">
+                <Button className="bg-gradient-to-b from-[#0047AB] to-[#00143F] hover:shadow-blue-900/20 hover:shadow-xl text-white font-bold rounded-full px-8 h-12 shadow-lg transition-all active:scale-95">
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile menu button */}
@@ -224,19 +285,63 @@ export default function Navbar() {
             </nav>
 
             <div className="flex flex-col gap-4 pb-8">
-              <Link href="/login" onClick={() => setOpen(false)}>
-                <Button
-                  variant="ghost"
-                  className="w-full text-[#00143F] font-bold bg-[#F1F5F9] rounded-full h-14"
-                >
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/register" onClick={() => setOpen(false)}>
-                <Button className="w-full bg-gradient-to-b from-[#0047AB] to-[#00143F] text-white font-bold rounded-full h-14 shadow-lg">
-                  Sign Up
-                </Button>
-              </Link>
+              {status === "authenticated" ? (
+                <>
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#F8FAFC] p-4">
+                    <div className="h-12 w-12 rounded-full bg-[#E2E8F0] overflow-hidden flex items-center justify-center">
+                      {avatarUrl ? (
+                        <Image
+                          src={avatarUrl}
+                          alt={user?.name || "Profile avatar"}
+                          width={48}
+                          height={48}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-base font-semibold text-[#00143F]">
+                          {user?.name?.slice(0, 1)?.toUpperCase() || "U"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-[#00143F]">
+                        {user?.name || "Profile"}
+                      </span>
+                      <span className="text-sm text-slate-500 truncate max-w-[180px]">
+                        {user?.email}
+                      </span>
+                    </div>
+                  </div>
+                  <Link href="/profile" onClick={() => setOpen(false)}>
+                    <Button className="w-full bg-gradient-to-b from-[#0047AB] to-[#00143F] text-white font-bold rounded-full h-14 shadow-lg">
+                      Profile
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    className="w-full text-[#dc2626] font-bold border border-red-100 rounded-full h-14"
+                    onClick={handleLogout}
+                  >
+                    Log out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setOpen(false)}>
+                    <Button
+                      variant="ghost"
+                      className="w-full text-[#00143F] font-bold bg-[#F1F5F9] rounded-full h-14"
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/role-selection" onClick={() => setOpen(false)}>
+                    <Button className="w-full bg-gradient-to-b from-[#0047AB] to-[#00143F] text-white font-bold rounded-full h-14 shadow-lg">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </aside>
